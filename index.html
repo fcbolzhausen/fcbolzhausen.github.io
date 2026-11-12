@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FC Bolzhausen</title>
+<link rel="icon" href="logo.svg?v=676ab0a8" type="image/svg+xml">
+<style>
+  :root{--karte:rgba(250,252,248,.93);--rand:#0f6b5c;--text:#14231f;--leise:#4b605a;--gold:#e0b040;--knopf:#0f6b5c}
+  html,body{margin:0;height:100%;overflow:hidden;background:#9fc7d8;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);-webkit-text-size-adjust:100%}
+  canvas{position:fixed;inset:0;display:block}
+  .karte{position:fixed;left:12px;right:12px;max-width:560px;margin:0 auto;background:var(--karte);border:1.5px solid var(--rand);border-radius:14px;box-shadow:0 4px 16px rgba(0,30,20,.2)}
+  #kopf{top:calc(10px + env(safe-area-inset-top));padding:10px 14px}
+  #kopf h1{margin:0;font-size:20px;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+  #kopf h1 .tag{font-size:12px;font-weight:600;color:var(--knopf);background:#e3f1ec;border-radius:8px;padding:2px 7px}
+  #zahl{font-size:14px;margin-top:3px;color:var(--leise)}
+  #balken{height:7px;background:#dde7e3;border-radius:4px;margin-top:7px;overflow:hidden}
+  #balken div{height:100%;background:linear-gradient(90deg,var(--knopf),var(--gold));width:0;transition:width 1s}
+  #ziel{font-size:12px;color:var(--leise);margin-top:4px}
+  #wunsch{font-size:13.5px;margin-top:7px;line-height:1.35;border-top:1px dotted #9bb8ae;padding-top:6px}
+  #unten{bottom:calc(12px + env(safe-area-inset-bottom));padding:10px 12px 9px}
+  form{display:flex;gap:8px}
+  input{flex:1;min-width:0;font:16px system-ui,sans-serif;padding:10px 12px;border:1.5px solid var(--rand);border-radius:10px;background:#fff;color:var(--text)}
+  button{font:600 15px system-ui,sans-serif;padding:0 16px;border:0;border-radius:10px;background:var(--knopf);color:#fff}
+  #meldung{font-size:13.5px;margin:7px 2px 0;display:none;line-height:1.3}
+  #meldung.zeigen{display:flex}
+  #meldung{align-items:center;gap:8px}
+  #meldtext{flex:1}
+  #schliessen{flex:none;padding:6px 10px;font-size:13px;background:#e3f1ec;color:var(--knopf);border:1px solid var(--rand)}
+  #kamera{position:fixed;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:5}
+  #kamera button{width:44px;height:44px;padding:0;border-radius:22px;background:var(--karte);color:var(--text);border:1.5px solid var(--rand);font-size:22px;line-height:1;box-shadow:0 3px 10px rgba(0,30,20,.2)}
+  #optout{font-size:11.5px;color:var(--leise);margin:6px 2px 0}
+  .schild{position:fixed;left:0;top:0;pointer-events:none;background:#0f3d35;color:#fff;border:1.5px solid var(--gold);border-radius:7px;padding:3px 9px;font:600 13px system-ui,sans-serif;white-space:nowrap;display:none;transform:translate(-50%,-130%)}
+  #mein{background:var(--gold);color:#14231f;border-color:#fff3c4;font-size:15px;box-shadow:0 0 18px 6px rgba(255,210,90,.8)}
+  #match{font-size:13px;margin-top:6px;color:var(--leise)}
+  #match b{color:var(--text)}
+  #match a{color:var(--knopf);font-weight:600;text-decoration:none;white-space:nowrap}
+  
+  #laden{position:fixed;inset:0;z-index:100;overflow:hidden;pointer-events:none}
+  #laden .tor{position:absolute;top:0;bottom:0;width:50.5%;background:repeating-linear-gradient(90deg,#26231f 0 26px,#1d1b18 26px 30px);transition:transform .85s cubic-bezier(.7,0,.3,1)}
+  #laden .tor.links{left:0;border-right:3px solid #e8541e}
+  #laden .tor.rechts{right:0;border-left:3px solid #e8541e}
+  #laden .inhalt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .3s,transform .3s}
+  #laden .wappen{width:132px;height:132px;border-radius:50%;background:#f6efdf;border:4px solid #e8541e;box-shadow:0 6px 24px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center}
+  #laden .wappen svg{width:84px;height:auto;overflow:visible}
+  #laden .flamme{transform-box:fill-box;transform-origin:50% 100%;animation:flackern .5s ease-in-out infinite alternate}
+  #laden .ball{transform-box:fill-box;transform-origin:50% 50%;animation:drehen 1.6s linear infinite}
+  @keyframes flackern{from{transform:scale(1,1)}to{transform:scale(1.05,.93)}}
+  @keyframes drehen{to{transform:rotate(360deg)}}
+  #laden .ladetext{color:#f6efdf;font-size:16px;font-weight:600;letter-spacing:.3px}
+  #laden .ladebalken{width:150px;height:4px;border-radius:2px;background:rgba(246,239,223,.25);overflow:hidden}
+  #laden .ladebalken div{width:40%;height:100%;border-radius:2px;background:#ffc531;animation:lauf 1.1s ease-in-out infinite}
+  @keyframes lauf{0%{transform:translateX(-110%)}100%{transform:translateX(260%)}}
+  #laden.offen .inhalt{opacity:0;transform:scale(.92)}
+  #laden.offen .tor.links{transform:translateX(-102%)}
+  #laden.offen .tor.rechts{transform:translateX(102%)}
+  @media (prefers-reduced-motion:reduce){#laden .ball,#laden .flamme,#laden .ladebalken div{animation:none}#laden .tor{transition:opacity .5s}#laden.offen .tor{transform:none;opacity:0}}
+  .logo{height:1.25em;width:auto;vertical-align:-.25em;margin-right:6px}
+  #namensschilder{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+  .ns{position:absolute;left:0;top:0;display:none;background:rgba(0,0,0,.42);color:#fff;font:500 13px/1.25 ui-monospace,Menlo,Consolas,monospace;padding:1px 5px;white-space:nowrap;transform-origin:50% 100%;will-change:transform}
+  #hover.schild{background:rgba(0,0,0,.42);color:#fff;border:2px solid #f2c94c;border-radius:0;padding:1px 5px;font:500 13px/1.25 ui-monospace,Menlo,Consolas,monospace;transform:translate(-50%,-100%)}
+</style>
+</head>
+<body>
+<div id="kopf" class="karte">
+  <h1><img src="logo.svg?v=676ab0a8" alt="" width="20" height="24" class="logo">FC Bolzhausen <span class="tag">#bolzhausen</span></h1>
+  <div id="zahl">…</div>
+  <div id="balken"><div></div></div>
+  <div id="ziel"></div>
+  <div id="wunsch"></div>
+  <div id="match" hidden></div>
+</div>
+<div id="unten" class="karte">
+  <form id="suche"><input id="eingabe" placeholder="Dein Instagram-Name" autocomplete="off" autocapitalize="none" spellcheck="false"><button>Finde meinen Platz</button></form>
+  <div id="meldung"><span id="meldtext"></span><button type="button" id="schliessen" aria-label="Schliessen und zurück zum Stadion">✕ Zurück</button></div>
+  <div id="optout">Jeder Follower bekommt einen Platz mit seinem Namen. Du willst nicht ins Stadion? Schreib uns eine DM.</div>
+</div>
+<div id="kamera"><button id="rein" aria-label="Hineinzoomen">+</button><button id="raus" aria-label="Herauszoomen">−</button><button id="heim" aria-label="Zurück zur Übersicht">⌂</button></div>
+<div id="hover" class="schild"></div>
+<div id="mein" class="schild"></div>
+<div id="laden" role="status" aria-label="Das Stadion lädt"><div class="tor links"></div><div class="tor rechts"></div>
+  <div class="inhalt"><div class="wappen"><svg xmlns="http://www.w3.org/2000/svg" viewBox="10 2 80 98" aria-hidden="true"><g class="flamme"><path fill="#e8541e" d="M50 98C27 98 12 82 12 62c0-14 6-23 14-31 0 8 4 13 9 14-3-13 3-27 14-43-1 15 6 24 12 27 0-7 4-13 10-17-2 13 6 21 12 31 3 6 5 12 5 19 0 21-15 36-38 36z"/><path fill="#ffc531" d="M50 93c-18 0-31-13-31-30 0-9 3-16 9-22 1 6 5 10 11 10-2-11 3-21 11-31 0 12 6 19 13 21 0-5 3-9 7-12 0 10 6 17 9 24 2 4 3 7 3 11 0 16-13 29-32 29z"/></g><g class="ball"><clipPath id="kl"><circle cx="50" cy="66" r="22"/></clipPath><circle cx="50" cy="66" r="22" fill="#fff"/><g clip-path="url(#kl)" fill="#1d1d1b" stroke="#1d1d1b" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><path d="M50.0 59.6L56.1 64.0L53.8 71.2L46.2 71.2L43.9 64.0ZM50.0 52.2L43.9 47.8L46.2 40.6L53.8 40.6L56.1 47.8ZM63.1 61.7L65.4 54.6L73.0 54.6L75.3 61.7L69.2 66.2ZM58.1 77.2L65.6 77.2L68.0 84.3L61.9 88.7L55.8 84.3ZM41.9 77.2L44.2 84.3L38.1 88.7L32.0 84.3L34.4 77.2ZM36.9 61.7L30.8 66.2L24.7 61.7L27.0 54.6L34.6 54.6Z"/><path fill="none" d="M50.0 59.6L50.0 52.2M56.1 64.0L63.1 61.7M53.8 71.2L58.1 77.2M46.2 71.2L41.9 77.2M43.9 64.0L36.9 61.7"/></g><circle cx="50" cy="66" r="22" fill="none" stroke="#1d1d1b" stroke-width="3"/></g></svg></div>
+  <div class="ladetext">Die Tore öffnen sich …</div><div class="ladebalken"><div></div></div></div></div>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
+<script type="module" src="./stadion.js?v=676ab0a8"></script>
+</body>
+</html>
